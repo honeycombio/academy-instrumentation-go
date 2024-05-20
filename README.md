@@ -7,7 +7,7 @@ It generates images by combining a randomly chosen picture with a randomly chose
 
 ## Introduction
 
-Hello! Welcome to the **Instrumenting with Python** course lab.
+Hello! Welcome to the **Instrumenting with go** course lab.
 
 1. Take a look at this app. The `backend-for-frontend` service needs to be instrumented.
 2. Before you can do that, you need to run this app.
@@ -44,7 +44,7 @@ You also have the option to run this application locally.
 First, clone this repository.
 
 ```bash
-git clone https://github.com/honeycombio/academy-instrumentation-python.git
+git clone https://github.com/honeycombio/academy-instrumentation-go.git
 ```
 
 Install Docker: https://docs.docker.com/get-docker/
