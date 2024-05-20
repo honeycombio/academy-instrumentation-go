@@ -18,11 +18,26 @@ import (
 
 // phrasesList holds the collection of phrases to choose from
 var phrasesList = []string{
-	"Hello, world!",
-	"Today is a wonderful day!",
-	"Programming in Go is fun!",
-	"Keep learning new things.",
-	"Make it work, make it right, make it fast.",
+	"you're muted",
+	"not dead yet",
+	"Let them.",
+	"Boiling Loves Company!",
+	"Must we?",
+	"SRE not-sorry",
+	"Honeycomb at home",
+	"There is no cloud",
+	"This is fine",
+	"It's a trap!",
+	"Not Today",
+	"You had one job",
+	"bruh",
+	"have you tried restarting?",
+	"try again after coffee",
+	"deploy != release",
+	"oh, just the crimes",
+	"not a bug, it's a feature",
+	"test in prod",
+	"who broke the build?",
 }
 
 // Phrase is a struct to map the JSON output
