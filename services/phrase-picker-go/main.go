@@ -1,10 +1,10 @@
 package main
 
 import (
-    "encoding/json"
-    "math/rand"
-    "net/http"
-    "time"
+	"encoding/json"
+	"log"
+	"math/rand"
+	"net/http"
 )
 
 // phrasesList holds the collection of phrases to choose from
@@ -22,14 +22,16 @@ type Phrase struct {
 }
 
 func main() {
-    // Seed the random number generator
-    rand.Seed(time.Now().UnixNano())
 
     // Setup HTTP route and handler
     http.HandleFunc("/phrase", phraseHandler)
 
     // Start the HTTP server
-    http.ListenAndServe(":8080", nil)
+    // Start the HTTP server
+    err := http.ListenAndServe(":8080", nil)
+    if err != nil {
+        log.Fatalf("Failed to start server: %v", err)
+    }
 }
 
 func phraseHandler(w http.ResponseWriter, r *http.Request) {
