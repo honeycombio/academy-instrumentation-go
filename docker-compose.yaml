@@ -25,15 +25,15 @@ services:
 
   phrase-picker:
     build:
-      context: services/phrase-picker-python
+      context: services/phrase-picker-go
       dockerfile: Dockerfile
-    image: phrase-picker-python:latest
+    image: phrase-picker-go:latest
     ports:
       - "10117:10114" # the outer ports can't be the same
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_HEADERS
-      - OTEL_SERVICE_NAME=phrase-picker-python
+      - OTEL_SERVICE_NAME=phrase-picker-go
 
   image-picker:
     build:
