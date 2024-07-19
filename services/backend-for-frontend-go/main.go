@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -41,12 +42,14 @@ func fetchFromService(ctx context.Context, url string, options *FetchOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		req, _ = http.NewRequest(options.Method, url, bytes.NewBuffer(body))
+		req, _ = http.NewRequestWithContext(ctx, options.Method, url, bytes.NewBuffer(body))
+		ctx, req = otelhttptrace.W3C(ctx, req)
+		otelhttptrace.Inject(ctx, req)
 		req.Header.Set("Content-Type", "application/json")
-		// Inject propagation to the header
-		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	} else {
-		req, err = http.NewRequest("GET", url, nil)
+		req, err = http.NewRequestWithContext(ctx, "GET", url, nil)
+		ctx, req = otelhttptrace.W3C(ctx, req)
+		otelhttptrace.Inject(ctx, req)
 	}
 	if err != nil {
 		return nil, err
