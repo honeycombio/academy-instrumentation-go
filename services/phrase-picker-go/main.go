@@ -70,7 +70,7 @@ func main() {
 	e.GET("/phrase", phraseHandler)
 
 	// start the server on the specified port
-	e.Logger.Fatal(e.Start(":10117"))
+	e.Logger.Fatal(e.Start(":10118"))
 }
 
 func phraseHandler(c echo.Context) error {
