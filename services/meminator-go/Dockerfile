@@ -22,6 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 # Start from a smaller image that does not include the Go toolchain.
 FROM alpine:latest
 
+RUN apk add libjpeg
 RUN apk add imagemagick
 
 # Create a directory for custom fonts

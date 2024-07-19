@@ -59,7 +59,7 @@ func main() {
 	e.GET("/health", healthCheckHandler)
 
 	// define a route '/applyPhraseToPicture'
-	e.GET("/applyPhraseToPicture", meminateHandler)
+	e.POST("/applyPhraseToPicture", meminateHandler)
 
 	// start the server on the specified port
 	e.Logger.Fatal(e.Start(":10117"))
@@ -102,6 +102,7 @@ func meminateHandler(c echo.Context) error {
 	if err := cmd.Run(); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Subprocess failed with return code: %v", err)})
 	}
+
 	defer os.Remove(outputImagePath)
 	return c.File(outputImagePath)
 }
@@ -122,7 +123,7 @@ func downloadImage(url string) (string, error) {
 	}
 
 	extension := getFileExtension(url)
-	tempFile, err := os.CreateTemp("", fmt.Sprintf("*.%s", extension))
+	tempFile, err := os.CreateTemp("", fmt.Sprintf("*%s", extension))
 
 	if err != nil {
 		return "", err
