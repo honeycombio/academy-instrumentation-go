@@ -2,18 +2,18 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"math/rand"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/trace"
-
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // phrasesList holds the collection of phrases to choose from
@@ -46,8 +46,52 @@ type Phrase struct {
 }
 
 func main() {
-	ctx := context.Background()
+	// Initialize OpenTelemetry Tracer
+	tracerProvider, err := initTracer()
+	if err != nil {
+		log.Fatalf("failed to initialize tracer: %v", err)
+	}
+	defer func() { _ = tracerProvider.Shutdown(context.Background()) }()
 
+	// create a new echo instance
+	e := echo.New()
+
+	// Use the OpenTelemetry Echo Middleware
+	e.Use(otelecho.Middleware("phrase-picker"))
+
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	// Health check endpoint
+	e.GET("/health", healthCheckHandler)
+
+	// define a route '/phrase'
+	e.GET("/phrase", phraseHandler)
+
+	// start the server on the specified port
+	e.Logger.Fatal(e.Start(":10117"))
+}
+
+func phraseHandler(c echo.Context) error {
+	// select a random phrase
+	randomIndex := rand.Intn(len(phrasesList))
+	selectedPhrase := phrasesList[randomIndex]
+
+	// create a Phrase struct with the selected phrase
+	response := Phrase{Phrase: selectedPhrase}
+
+	// return the response
+	return c.JSON(http.StatusOK, response)
+}
+
+func healthCheckHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
+}
+
+func initTracer() (*sdktrace.TracerProvider, error) {
+
+	ctx := context.Background()
 	// Configure a new OTLP exporter using environment variables for sending data to Honeycomb over gRPC
 	client := otlptracehttp.NewClient()
 	exp, err := otlptrace.New(ctx, client)
@@ -55,18 +99,12 @@ func main() {
 		log.Fatalf("failed to initialize exporter: %e", err)
 	}
 
-	// Create a new tracer provider with a batch span processor and the otlp exporter
-	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exp),
+	// Create a new trace provider with the exporter
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
 	)
 
-	// Handle shutdown to ensure all sub processes are closed correctly and telemetry is exported
-	defer func() {
-		_ = exp.Shutdown(ctx)
-		_ = tp.Shutdown(ctx)
-	}()
-
-	// Register the global Tracer provider
+	// Register the trace provider as the global provider
 	otel.SetTracerProvider(tp)
 
 	// Register the W3C trace context and baggage propagators so data is propagated across services/processes
@@ -77,31 +115,5 @@ func main() {
 		),
 	)
 
-	// Implement an HTTP handler func to be instrumented
-	handler := http.HandlerFunc(phraseHandler)
-
-	// Setup handler instrumentation
-	wrappedHandler := otelhttp.NewHandler(handler, "hello")
-	http.Handle("/phrase", wrappedHandler)
-
-	// Start the HTTP server
-	// Start the HTTP server
-	log.Fatal(http.ListenAndServe(":10114", nil))
-
-}
-
-func phraseHandler(w http.ResponseWriter, r *http.Request) {
-	// Select a random phrase
-	randomIndex := rand.Intn(len(phrasesList))
-	selectedPhrase := phrasesList[randomIndex]
-
-	// Create a Phrase struct with the selected phrase
-	response := Phrase{Phrase: selectedPhrase}
-
-	// Set content type and CORS headers
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	// Encode the response as JSON
-	json.NewEncoder(w).Encode(response)
+	return tp, nil
 }

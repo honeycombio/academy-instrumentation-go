@@ -1,6 +1,6 @@
 # Use the official Golang image to create a build artifact.
 # This is based on Debian and includes the Go toolchain.
-FROM golang:1.22 as builder
+FROM golang:1.22 AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -29,7 +29,7 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 
 # Expose port 8080 to the outside world
-EXPOSE 10114
+EXPOSE 10117
 
 # Command to run the executable
 CMD ["./main"]
