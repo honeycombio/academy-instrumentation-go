@@ -2,9 +2,9 @@
   "name": "@o11yday/web",
   "version": "0.1.2",
   "description": "bundle up a static page",
-  "main": "static/index.html",
+  "default": "static/index.html",
   "scripts": {
-    "build": "parcel build static/index.html"
+    "build": "npx parcel build static/index.html"
   },
   "author": "",
   "license": "ISC",

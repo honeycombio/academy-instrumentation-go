@@ -9,7 +9,7 @@ It generates images by combining a randomly chosen picture with a randomly chose
 
 ## Introduction
 
-Hello! Welcome to the **Instrumenting with go** course lab.
+Hello! Welcome to the **Instrumenting with Go** course lab.
 
 1. Take a look at this app. The `backend-for-frontend` service needs to be instrumented.
 2. Before you can do that, you need to run this app.
@@ -24,20 +24,19 @@ To run this app, you can use GitPod or Codespaces.
 
 Once you run the application, you can send traces to Honeycomb. Then you can practice improving the instrumentation for better observability.
 
-
-### GitPod setup
-
-Go to [Gitpod](https://honeycombio-academyinst-i0cuptb35ss.ws-us110.gitpod.io/) to open the repository.
-
-Confirm the workspace creation. You can work in the browser with VS Code Browser or in your local code editor.
-
-
-### Codespaces setup
+### GitHub Codespaces setup
 
 Open the repository on GitHub. Open the `<> Code` dropdown down menu.
 
 Select the `Codespaces` tab. Create a codespace on main.
 
+### GitPod setup
+
+Go to [Gitpod](https://gitpod.io/#https://github.com/honeycombio/academy-instrumentation-go) to open the repository.
+
+Confirm the workspace creation. You can work in the browser with VS Code Browser or in your local code editor. The default settings are acceptable. 
+
+Once you are in the code editor, run `docker compose up` in the code editor's terminal. To stop running the application, run `ctrl+c`. Then run `docker compose down` to remove the container.
 
 ### Local development setup
 
@@ -79,7 +78,7 @@ If you don't have an API key handy, here is the [documentation](https://docs.hon
 
 Access the app:
 
-[http://localhost:8080]()
+[http://localhost:10114]()
 
 After making changes to a service, you can tell it to rebuild just that one:
 
@@ -87,6 +86,14 @@ After making changes to a service, you can tell it to rebuild just that one:
 
 ### Try it out
 
-Visit [http://localhost:8080]()
+Visit [http://localhost:10114]()
+
+> If you are using **GitPod**, the address may not be localhost. When running, the VSC environment will ask you if you want to expose the ports to public. Select Yes, and you will see the external address and port 10114, to which you can then click the globe icon to show it on a new tab.
 
 Click the "GO" button. Then wait.
+
+> **NOTE** ⚠️ If you run the application for the first time, the result image may not load up properly. In that case, reload the page, and try again a few times.
+
+### Stop the app
+
+`./stop`

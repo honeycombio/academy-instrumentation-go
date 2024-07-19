@@ -26,15 +26,15 @@ services:
 
   meminator:
     build:
-      context: services/meminator-python
+      context: services/meminator-go
       dockerfile: Dockerfile
-    image: meminator-python:latest
+    image: meminator-go:latest
     ports:
       - "10117:10117" # they can't be the same
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_HEADERS
-      - OTEL_SERVICE_NAME=meminator-python
+      - OTEL_SERVICE_NAME=meminator-go
 
   phrase-picker:
     build:
