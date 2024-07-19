@@ -97,11 +97,11 @@ func init() {
 
 func main() {
 	// Initialize OpenTelemetry Tracer
-	tracerProvider, err := initTracer()
+	tp, err := initTracer()
 	if err != nil {
 		log.Fatalf("failed to initialize tracer: %v", err)
 	}
-	defer func() { _ = tracerProvider.Shutdown(context.Background()) }()
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	// create a new echo instance
 	e := echo.New()

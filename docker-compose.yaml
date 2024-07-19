@@ -1,15 +1,20 @@
 services:
   backend-for-frontend:
     build:
-      context: services/backend-for-frontend-python
+      context: services/backend-for-frontend-go
       dockerfile: Dockerfile
-    image: backend-for-frontend-python:latest
+    image: backend-for-frontend-go:latest
     ports:
       - "10115:10115"
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_HEADERS
       - OTEL_SERVICE_NAME=backend-for-frontend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:10115/health || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
 
   image-picker:
     build:
@@ -61,7 +66,7 @@ services:
       - "10114:10114" # Expose port 10114 for Nginx
     depends_on:
       backend-for-frontend:
-        condition: service_started
+        condition: service_healthy
       image-picker:
         condition: service_started
       meminator:
