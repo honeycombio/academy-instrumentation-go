@@ -30,7 +30,7 @@ type FetchOptions struct {
 	Body   interface{}
 }
 
-func fetchFromService(url string, options *FetchOptions) (*http.Response, error) {
+func fetchFromService(ctx context.Context, url string, options *FetchOptions) (*http.Response, error) {
 	var (
 		req *http.Request
 		err error
@@ -43,6 +43,8 @@ func fetchFromService(url string, options *FetchOptions) (*http.Response, error)
 		}
 		req, _ = http.NewRequest(options.Method, url, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
+		// Inject propagation to the header
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	} else {
 		req, err = http.NewRequest("GET", url, nil)
 	}
@@ -55,7 +57,9 @@ func fetchFromService(url string, options *FetchOptions) (*http.Response, error)
 }
 
 func createPicture(w http.ResponseWriter, r *http.Request) {
-	phraseResponse, err := fetchFromService(phrasePicker, nil)
+	ctx, span := otel.Tracer("backend-for-frontend").Start(context.Background(), "createPicture")
+	defer span.End()
+	phraseResponse, err := fetchFromService(ctx, phrasePicker, nil)
 	if err != nil || phraseResponse.StatusCode != http.StatusOK {
 		http.Error(w, "Failed to fetch phrase", http.StatusInternalServerError)
 		return
@@ -67,7 +71,7 @@ func createPicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageResponse, err := fetchFromService(imagePicker, nil)
+	imageResponse, err := fetchFromService(ctx, imagePicker, nil)
 	if err != nil || imageResponse.StatusCode != http.StatusOK {
 		http.Error(w, "Failed to fetch image", http.StatusInternalServerError)
 		return
@@ -79,7 +83,7 @@ func createPicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	meminatorResponse, err := fetchFromService(meminator, &FetchOptions{
+	meminatorResponse, err := fetchFromService(ctx, meminator, &FetchOptions{
 		Method: "POST",
 		Body:   mergeMaps(phraseResult, imageResult),
 	})
