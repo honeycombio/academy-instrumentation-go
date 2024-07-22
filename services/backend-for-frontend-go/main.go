@@ -2,21 +2,11 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
-
-	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 const (
@@ -31,7 +21,7 @@ type FetchOptions struct {
 	Body   interface{}
 }
 
-func fetchFromService(ctx context.Context, url string, options *FetchOptions) (*http.Response, error) {
+func fetchFromService(url string, options *FetchOptions) (*http.Response, error) {
 	var (
 		req *http.Request
 		err error
@@ -42,14 +32,10 @@ func fetchFromService(ctx context.Context, url string, options *FetchOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		req, _ = http.NewRequestWithContext(ctx, options.Method, url, bytes.NewBuffer(body))
-		ctx, req = otelhttptrace.W3C(ctx, req)
-		otelhttptrace.Inject(ctx, req)
+		req, _ = http.NewRequest(options.Method, url, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 	} else {
-		req, err = http.NewRequestWithContext(ctx, "GET", url, nil)
-		ctx, req = otelhttptrace.W3C(ctx, req)
-		otelhttptrace.Inject(ctx, req)
+		req, err = http.NewRequest("GET", url, nil)
 	}
 	if err != nil {
 		return nil, err
@@ -60,9 +46,7 @@ func fetchFromService(ctx context.Context, url string, options *FetchOptions) (*
 }
 
 func createPicture(w http.ResponseWriter, r *http.Request) {
-	ctx, span := otel.Tracer("backend-for-frontend").Start(context.Background(), "createPicture")
-	defer span.End()
-	phraseResponse, err := fetchFromService(ctx, phrasePicker, nil)
+	phraseResponse, err := fetchFromService(phrasePicker, nil)
 	if err != nil || phraseResponse.StatusCode != http.StatusOK {
 		http.Error(w, "Failed to fetch phrase", http.StatusInternalServerError)
 		return
@@ -74,7 +58,7 @@ func createPicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageResponse, err := fetchFromService(ctx, imagePicker, nil)
+	imageResponse, err := fetchFromService(imagePicker, nil)
 	if err != nil || imageResponse.StatusCode != http.StatusOK {
 		http.Error(w, "Failed to fetch image", http.StatusInternalServerError)
 		return
@@ -86,7 +70,7 @@ func createPicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	meminatorResponse, err := fetchFromService(ctx, meminator, &FetchOptions{
+	meminatorResponse, err := fetchFromService(meminator, &FetchOptions{
 		Method: "POST",
 		Body:   mergeMaps(phraseResult, imageResult),
 	})
@@ -119,48 +103,13 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Initialize OpenTelemetry Tracer
-	tracerProvider, err := initTracer()
-	if err != nil {
-		log.Fatalf("failed to initialize tracer: %v", err)
-	}
-	defer func() { _ = tracerProvider.Shutdown(context.Background()) }()
 
-	http.Handle("/createPicture", otelhttp.NewHandler(http.HandlerFunc(createPicture), "createPicture"))
-	http.Handle("/health", otelhttp.NewHandler(http.HandlerFunc(healthCheck), "healthCheck"))
+	http.HandleFunc("/createPicture", createPicture)
+	http.HandleFunc("/health", healthCheck)
 
 	fmt.Printf("Server is running on http://localhost:%d\n", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting server: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func initTracer() (*sdktrace.TracerProvider, error) {
-
-	ctx := context.Background()
-	// Configure a new OTLP exporter using environment variables for sending data to Honeycomb over gRPC
-	client := otlptracehttp.NewClient()
-	exp, err := otlptrace.New(ctx, client)
-	if err != nil {
-		log.Fatalf("failed to initialize exporter: %e", err)
-	}
-
-	// Create a new trace provider with the exporter
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exp),
-	)
-
-	// Register the trace provider as the global provider
-	otel.SetTracerProvider(tp)
-
-	// Register the W3C trace context and baggage propagators so data is propagated across services/processes
-	otel.SetTextMapPropagator(
-		propagation.NewCompositeTextMapPropagator(
-			propagation.TraceContext{},
-			propagation.Baggage{},
-		),
-	)
-
-	return tp, nil
 }

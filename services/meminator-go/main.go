@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,12 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 const (
@@ -38,18 +30,9 @@ type Request struct {
 }
 
 func main() {
-	// Initialize OpenTelemetry Tracer
-	tracerProvider, err := initTracer()
-	if err != nil {
-		log.Fatalf("failed to initialize tracer: %v", err)
-	}
-	defer func() { _ = tracerProvider.Shutdown(context.Background()) }()
 
 	// create a new echo instance
 	e := echo.New()
-
-	// Use the OpenTelemetry Echo Middleware
-	e.Use(otelecho.Middleware("meminator"))
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -161,33 +144,4 @@ func getFileExtension(url string) string {
 		return "." + parts[len(parts)-1]
 	}
 	return ""
-}
-
-func initTracer() (*sdktrace.TracerProvider, error) {
-
-	ctx := context.Background()
-	// Configure a new OTLP exporter using environment variables for sending data to Honeycomb over gRPC
-	client := otlptracehttp.NewClient()
-	exp, err := otlptrace.New(ctx, client)
-	if err != nil {
-		log.Fatalf("failed to initialize exporter: %e", err)
-	}
-
-	// Create a new trace provider with the exporter
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exp),
-	)
-
-	// Register the trace provider as the global provider
-	otel.SetTracerProvider(tp)
-
-	// Register the W3C trace context and baggage propagators so data is propagated across services/processes
-	otel.SetTextMapPropagator(
-		propagation.NewCompositeTextMapPropagator(
-			propagation.TraceContext{},
-			propagation.Baggage{},
-		),
-	)
-
-	return tp, nil
 }
